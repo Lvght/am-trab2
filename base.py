@@ -22,18 +22,29 @@ header = next(csvreader)
 data = []
 
 for row in csvreader:
-  data.append(row[1:])
-
-print(X)
-print('Len is ', len(X))
-print('Instance size is ', X[0].size)
+  data.append(np.array(row[1:], dtype=float))
 
 # Implemente aqui o seu algoritmo.
 
 # Agrupamento Hierárquico
-agglomerative = AgglomerativeClustering(distance_threshold=20, n_clusters=None)
-model = agglomerative.fit(data)
+best_silhouette_score = -1;
+best_model = None;
+best_n = None;
 
+silhouette_array = []
+
+for i in range(2, 20, 2):
+  agglomerative = AgglomerativeClustering(distance_threshold=None, n_clusters=i, compute_distances=True)
+  model = agglomerative.fit(data)
+
+  silhouette = silhouette_score(data, model.labels_)
+  silhouette_array.append(silhouette)
+  if(silhouette > best_silhouette_score):
+    best_silhouette_score = silhouette
+    best_model = model
+    best_n = i
+
+model = best_model
 counts = np.zeros(model.children_.shape[0])
 n_samples = len(model.labels_)
 
@@ -50,5 +61,14 @@ linkage_matrix = np.column_stack(
     [model.children_, model.distances_, counts]
 ).astype(float)
 
-dendrogram(linkage_matrix, truncate_mode="level", p=3)
-silhouette_score(data, model.labels_)
+plt.plot(range(2, 20, 2), silhouette_array)
+
+plt.xlabel('Clusters')
+plt.ylabel('Silhouette score')
+
+plt.show()
+
+print("A melhor silhueta é", best_silhouette_score)
+print("O melhor número de clusters é", best_n)
+dendrogram(linkage_matrix, truncate_mode="level", p=best_n)
+plt.show()
